@@ -65,7 +65,6 @@ df = df[['name', 'position', 'sub_position', 'foot', 'height_in_cm', 'age',
 for col in ['position', 'sub_position', 'foot']:
     df[col] = df[col].astype(str).str.lower().str.strip()
 
-
 #numeric fixes
 df['age'] = df['age'].fillna(df['age'].median())
 df['height_in_cm'] = df['height_in_cm'].fillna(df['height_in_cm'].median())
@@ -83,5 +82,25 @@ df_encoded = pd.get_dummies(df, columns=['position', 'sub_position', 'foot'], dr
 
 #Final Dataset
 df_encoded.to_csv("player_attributes.csv", index=False)
+
+# Regular distribution plot
+plt.figure()
+plt.hist(df['market_value_in_eur'], bins=50)
+plt.title("Distribution of Market Value")
+plt.xlabel("Market Value (EUR)")
+plt.ylabel("Frequency")
+plt.tight_layout()
+plt.savefig("market_value_distribution.png")
+plt.show()
+
+# Log-transformed distribution plot
+plt.figure()
+plt.hist(np.log1p(df['market_value_in_eur']), bins=50)
+plt.title("Log-Transformed Distribution of Market Value")
+plt.xlabel("Log Market Value")
+plt.ylabel("Frequency")
+plt.tight_layout()
+plt.savefig("log_market_value_distribution.png")
+plt.show()
 
 print("File Saved Successfully")
