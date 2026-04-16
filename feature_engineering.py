@@ -16,25 +16,37 @@ players['date_of_birth'] = pd.to_datetime(players['date_of_birth'], errors='coer
 valuations['date'] = pd.to_datetime(valuations['date'], errors='coerce')
 appearances['date'] = pd.to_datetime(appearances['date'], errors='coerce')
 
+#Player Age Engineering
+players['age'] = (pd.Timestamp.today() - players['date_of_birth']).dt.days // 365
 
 #Latest Player Valuations Transfermarkt
-valuations_latest = (valuations.sort_values('date').drop_duplicates('player_id', keep='last'))
+valuations_latest = (
+    valuations.sort_values('date')
+    .drop_duplicates('player_id', keep='last')
+)[['player_id', 'market_value_in_eur']]
+
+#Remove existing market value columns from players (prevents duplicates)
+players_clean = players.drop(
+    columns=[col for col in players.columns if 'market_value' in col],
+    errors='ignore'
+)
 
 #Merging Players and valuations 
-df = players.merge(valuations_latest[['player_id', 'market_value_in_eur', 'dtae']], on='player_id', how='inner')
-
-#Player Age Engineering
-df['age'] = (df['date'] - df['date_of_borth']).dt.days // 365
+df = players_clean.merge(valuations_latest, on='player_id', how='inner')
 
 #Aggregating(combining) appearances
-agg = appearances.groupby('player_id').agg({'goals': 'sum', 'assists': 'sum', 'minutes_played': 'sum', 'yellow_cards': 'sum', 'appearance_id': 'count'}).reset.index()
-
-agg.rename(columns={'appearance_id': 'total_appearance'}, inplace=True)
+agg = appearances.groupby('player_id').agg(
+    goals=('goals', 'sum'),
+    assists=('assists', 'sum'),
+    minutes_played=('minutes_played', 'sum'),
+    yellow_cards=('yellow_cards', 'sum'),
+    total_appearances=('appearance_id', 'count')
+).reset_index()
 
 #Per Game Stats (fixing division by 0)
 agg['goals_per_game'] = agg['goals'] / agg['total_appearances'].replace(0, np.nan)
 agg['assists_per_game'] = agg['assists'] / agg['total_appearances'].replace(0, np.nan)
-agg['minutes'] = agg['minutes'] / agg['total_appearances'].replace(0, np.nan)
+agg['minutes_per_game'] = agg['minutes_played'] / agg['total_appearances'].replace(0, np.nan)
 agg['yellows_per_game'] = agg['yellow_cards'] / agg['total_appearances'].replace(0, np.nan)
 
 agg.fillna(0, inplace=True)
@@ -42,17 +54,34 @@ agg.fillna(0, inplace=True)
 #merging data
 df = df.merge(agg, on='player_id', how='inner')
 
-#Select Features
-df = df[['position', 'sub_position', 'foot', 'height_in_cm', 'age', 'current_club_domestic_competition_id', 'goals_per_game', 'assists_per_game', 'minutes_per_game', 'yellows_per_game', 'total_appearances', 'market_value_in_eur']]
+#Select Features (INCLUDING PLAYER NAME)
+df = df[['name', 'position', 'sub_position', 'foot', 'height_in_cm', 'age',
+         'current_club_domestic_competition_id',
+         'goals_per_game', 'assists_per_game', 'minutes_per_game',
+         'yellows_per_game', 'total_appearances',
+         'market_value_in_eur']]
 
 #Data Cleanup
 for col in ['position', 'sub_position', 'foot']:
     df[col] = df[col].astype(str).str.lower().str.strip()
 
-#One Hot Encoding
-df_encoded = pd.get_dummies(df, columns=['position', 'sub_position', 'foot'], drop_first= True)
+
+#numeric fixes
+df['age'] = df['age'].fillna(df['age'].median())
+df['height_in_cm'] = df['height_in_cm'].fillna(df['height_in_cm'].median())
+
+#categorical fixes
+df['position'] = df['position'].fillna('unknown')
+df['sub_position'] = df['sub_position'].fillna('unknown')
+df['foot'] = df['foot'].fillna('unknown')
+
+#final cleanup
+df.dropna(inplace=True)
+
+# One Hot Encoding
+df_encoded = pd.get_dummies(df, columns=['position', 'sub_position', 'foot'], drop_first=True)
 
 #Final Dataset
 df_encoded.to_csv("player_attributes.csv", index=False)
 
-print("File Saved")
+print("File Saved Successfully")
