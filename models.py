@@ -19,9 +19,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
-# =========================
 # BASELINE MODEL
-# =========================
 baseline_prediction = y_train.mean()
 baseline_preds = np.full(len(y_test), baseline_prediction)
 
@@ -37,9 +35,7 @@ print(f"RMSE: {baseline_rmse:.2f}")
 print(f"MAE: {baseline_mae:.2f}")
 print(f"R^2: {baseline_r2:.4f}")
 
-# =========================
 # LINEAR REGRESSION
-# =========================
 
 # Scaling Features
 scaler = StandardScaler()
@@ -65,9 +61,7 @@ print(f"RMSE: {lr_rmse:.2f}")
 print(f"MAE: {lr_mae:.2f}")
 print(f"R^2: {lr_r2:.4f}")
 
-# =========================
 # DECISION TREE
-# =========================
 dt = DecisionTreeRegressor(random_state=42)
 dt.fit(X_train, y_train)
 
@@ -114,5 +108,29 @@ plt.bar(models, r2_values)
 plt.title("R² Comparison")
 plt.xlabel("Model")
 plt.ylabel("R² Score")
+plt.tight_layout()
+plt.show()
+
+# SCATTERPLOTS: ACTUAL VS PREDICTED
+
+# Linear Regression Scatterplot
+plt.figure(figsize=(8, 6))
+plt.scatter(y_test, lr_preds, alpha=0.5)
+plt.plot([y_test.min(), y_test.max()],
+         [y_test.min(), y_test.max()], 'r--')
+plt.title("Linear Regression: Actual vs Predicted Market Value")
+plt.xlabel("Actual Market Value")
+plt.ylabel("Predicted Market Value")
+plt.tight_layout()
+plt.show()
+
+# Decision Tree Scatterplot
+plt.figure(figsize=(8, 6))
+plt.scatter(y_test, dt_preds, alpha=0.5)
+plt.plot([y_test.min(), y_test.max()],
+         [y_test.min(), y_test.max()], 'r--')
+plt.title("Decision Tree: Actual vs Predicted Market Value")
+plt.xlabel("Actual Market Value")
+plt.ylabel("Predicted Market Value")
 plt.tight_layout()
 plt.show()
