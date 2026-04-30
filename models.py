@@ -134,6 +134,34 @@ print(f"RMSE: {rf_rmse:.2f}")
 print(f"MAE: {rf_mae:.2f}")
 print(f"R^2: {rf_r2:.4f}")
 
+# Random Forest Feature Importance
+
+importances = best_rf.feature_importances_
+feature_names = X.columns
+
+# Create DataFrame
+feature_importance_df = pd.DataFrame({
+    'Feature': feature_names,
+    'Importance': importances
+})
+
+# Sort by importance
+feature_importance_df = feature_importance_df.sort_values(by='Importance', ascending=False)
+
+# Print top 10 features
+print("\nTop 10 Most Important Features (Random Forest)")
+print(feature_importance_df.head(10))
+
+# Plot Top 10 Features
+plt.figure()
+plt.barh(feature_importance_df['Feature'][:10], feature_importance_df['Importance'][:10])
+plt.xlabel("Importance")
+plt.ylabel("Feature")
+plt.title("Top 10 Feature Importance (Random Forest)")
+plt.gca().invert_yaxis()
+plt.tight_layout()
+plt.savefig("feature_importance.png")
+plt.close()
 # Graphs
 
 models = ['Baseline', 'Linear Regression', 'Tuned Decision Tree', 'Tuned Random Forest']
