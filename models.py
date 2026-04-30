@@ -1,11 +1,13 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
+
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
 
 # Load Data
 df = pd.read_csv("player_attributes.csv")
@@ -19,7 +21,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
-# BASELINE MODEL
+# Baseline MOdel
 baseline_prediction = y_train.mean()
 baseline_preds = np.full(len(y_test), baseline_prediction)
 
@@ -35,7 +37,7 @@ print(f"RMSE: {baseline_rmse:.2f}")
 print(f"MAE: {baseline_mae:.2f}")
 print(f"R^2: {baseline_r2:.4f}")
 
-# LINEAR REGRESSION
+# Linear Regression
 
 # Scaling Features
 scaler = StandardScaler()
@@ -61,28 +63,84 @@ print(f"RMSE: {lr_rmse:.2f}")
 print(f"MAE: {lr_mae:.2f}")
 print(f"R^2: {lr_r2:.4f}")
 
-# DECISION TREE
-dt = DecisionTreeRegressor(random_state=42)
-dt.fit(X_train, y_train)
+# Decision Tree with Hyperparameter Tuning
 
-dt_preds = dt.predict(X_test)
+dt_params = {
+    'max_depth': [3, 5, 10, 15, None],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 4]
+}
+
+dt = DecisionTreeRegressor(random_state=42)
+
+grid_dt = GridSearchCV(
+    estimator=dt,
+    param_grid=dt_params,
+    cv=5,
+    scoring='neg_mean_squared_error',
+    n_jobs=-1
+)
+
+grid_dt.fit(X_train, y_train)
+
+best_dt = grid_dt.best_estimator_
+dt_preds = best_dt.predict(X_test)
 
 dt_mse = mean_squared_error(y_test, dt_preds)
 dt_rmse = np.sqrt(dt_mse)
 dt_mae = mean_absolute_error(y_test, dt_preds)
 dt_r2 = r2_score(y_test, dt_preds)
 
-print("\nDecision Tree Results")
+print("\nTuned Decision Tree Results")
+print(f"Best Parameters: {grid_dt.best_params_}")
 print(f"MSE: {dt_mse:.2f}")
 print(f"RMSE: {dt_rmse:.2f}")
 print(f"MAE: {dt_mae:.2f}")
 print(f"R^2: {dt_r2:.4f}")
 
-# COMPARISON GRAPHS
-models = ['Baseline', 'Linear Regression', 'Decision Tree']
-rmse_values = [baseline_rmse, lr_rmse, dt_rmse]
-mae_values = [baseline_mae, lr_mae, dt_mae]
-r2_values = [baseline_r2, lr_r2, dt_r2]
+# Random Forest with Hyperparameter tuning
+
+rf_params = {
+    'n_estimators': [100, 200],
+    'max_depth': [5, 10, 15, None],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 4]
+}
+
+rf = RandomForestRegressor(random_state=42)
+
+grid_rf = GridSearchCV(
+    estimator=rf,
+    param_grid=rf_params,
+    cv=5,
+    scoring='neg_mean_squared_error',
+    n_jobs=-1
+)
+
+grid_rf.fit(X_train, y_train)
+
+best_rf = grid_rf.best_estimator_
+rf_preds = best_rf.predict(X_test)
+
+rf_mse = mean_squared_error(y_test, rf_preds)
+rf_rmse = np.sqrt(rf_mse)
+rf_mae = mean_absolute_error(y_test, rf_preds)
+rf_r2 = r2_score(y_test, rf_preds)
+
+print("\nTuned Random Forest Results")
+print(f"Best Parameters: {grid_rf.best_params_}")
+print(f"MSE: {rf_mse:.2f}")
+print(f"RMSE: {rf_rmse:.2f}")
+print(f"MAE: {rf_mae:.2f}")
+print(f"R^2: {rf_r2:.4f}")
+
+# Graphs
+
+models = ['Baseline', 'Linear Regression', 'Tuned Decision Tree', 'Tuned Random Forest']
+
+rmse_values = [baseline_rmse, lr_rmse, dt_rmse, rf_rmse]
+mae_values = [baseline_mae, lr_mae, dt_mae, rf_mae]
+r2_values = [baseline_r2, lr_r2, dt_r2, rf_r2]
 
 # RMSE Plot
 plt.figure()
@@ -90,8 +148,10 @@ plt.bar(models, rmse_values)
 plt.title("RMSE Comparison")
 plt.xlabel("Model")
 plt.ylabel("RMSE")
+plt.xticks(rotation=20)
 plt.tight_layout()
-plt.show()
+plt.savefig("rmse_comparison.png")
+plt.close()
 
 # MAE Plot
 plt.figure()
@@ -99,8 +159,10 @@ plt.bar(models, mae_values)
 plt.title("MAE Comparison")
 plt.xlabel("Model")
 plt.ylabel("MAE")
+plt.xticks(rotation=20)
 plt.tight_layout()
-plt.show()
+plt.savefig("mae_comparison.png")
+plt.close()
 
 # R² Plot
 plt.figure()
@@ -108,29 +170,52 @@ plt.bar(models, r2_values)
 plt.title("R² Comparison")
 plt.xlabel("Model")
 plt.ylabel("R² Score")
+plt.xticks(rotation=20)
 plt.tight_layout()
-plt.show()
-
-# SCATTERPLOTS: ACTUAL VS PREDICTED
+plt.savefig("r2_comparison.png")
+plt.close()
 
 # Linear Regression Scatterplot
 plt.figure(figsize=(8, 6))
 plt.scatter(y_test, lr_preds, alpha=0.5)
-plt.plot([y_test.min(), y_test.max()],
-         [y_test.min(), y_test.max()], 'r--')
+plt.plot(
+    [y_test.min(), y_test.max()],
+    [y_test.min(), y_test.max()],
+    'r--'
+)
 plt.title("Linear Regression: Actual vs Predicted Market Value")
 plt.xlabel("Actual Market Value")
 plt.ylabel("Predicted Market Value")
 plt.tight_layout()
-plt.show()
+plt.savefig("linear_regression_scatterplot.png")
+plt.close()
 
-# Decision Tree Scatterplot
+# Tuned Decision Tree Scatterplot
 plt.figure(figsize=(8, 6))
 plt.scatter(y_test, dt_preds, alpha=0.5)
-plt.plot([y_test.min(), y_test.max()],
-         [y_test.min(), y_test.max()], 'r--')
-plt.title("Decision Tree: Actual vs Predicted Market Value")
+plt.plot(
+    [y_test.min(), y_test.max()],
+    [y_test.min(), y_test.max()],
+    'r--'
+)
+plt.title("Tuned Decision Tree: Actual vs Predicted Market Value")
 plt.xlabel("Actual Market Value")
 plt.ylabel("Predicted Market Value")
 plt.tight_layout()
-plt.show()
+plt.savefig("decision_tree_scatterplot.png")
+plt.close()
+
+# Tuned Random Forest Scatterplot
+plt.figure(figsize=(8, 6))
+plt.scatter(y_test, rf_preds, alpha=0.5)
+plt.plot(
+    [y_test.min(), y_test.max()],
+    [y_test.min(), y_test.max()],
+    'r--'
+)
+plt.title("Tuned Random Forest: Actual vs Predicted Market Value")
+plt.xlabel("Actual Market Value")
+plt.ylabel("Predicted Market Value")
+plt.tight_layout()
+plt.savefig("random_forest_scatterplot.png")
+plt.close()

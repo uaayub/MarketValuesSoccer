@@ -43,7 +43,7 @@ agg = appearances.groupby('player_id').agg(
     total_appearances=('appearance_id', 'count')
 ).reset_index()
 
-#Per Game Stats (fixing division by 0)
+#Per Game Stats
 agg['goals_per_game'] = agg['goals'] / agg['total_appearances'].replace(0, np.nan)
 agg['assists_per_game'] = agg['assists'] / agg['total_appearances'].replace(0, np.nan)
 agg['minutes_per_game'] = agg['minutes_played'] / agg['total_appearances'].replace(0, np.nan)
@@ -54,7 +54,7 @@ agg.fillna(0, inplace=True)
 #merging data
 df = df.merge(agg, on='player_id', how='inner')
 
-#Select Features (INCLUDING PLAYER NAME)
+#Select Features (including name for readability)
 df = df[['name', 'position', 'sub_position', 'foot', 'height_in_cm', 'age',
          'current_club_domestic_competition_id',
          'goals_per_game', 'assists_per_game', 'minutes_per_game',
@@ -79,6 +79,13 @@ df.dropna(inplace=True)
 
 # One Hot Encoding
 df_encoded = pd.get_dummies(df, columns=['position', 'sub_position', 'foot', 'current_club_domestic_competition_id'], drop_first=True)
+
+# CHECK MISSING VALUES BEFORE SAVING
+print("\nMissing Values in Final Dataset:")
+print(df_encoded.isnull().sum())
+
+print("\nTotal Missing Values:")
+print(df_encoded.isnull().sum().sum())
 
 #Final Dataset
 df_encoded.to_csv("player_attributes.csv", index=False)
