@@ -9,10 +9,16 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 
-# Load Data
+
+# Fixed random seed so results can be reproduced
+np.random.seed(42)
+
+# Load the cleaned dataset created from the preprocessing file
 df = pd.read_csv("player_attributes.csv")
 
 # Define Features and Target
+# The target is market value because that is what the models are trying to predict.
+# The name column is dropped because it is only used to identify players
 X = df.drop(columns=['market_value_in_eur', 'name'])
 y = df['market_value_in_eur']
 
@@ -22,6 +28,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 
 # Baseline Model
+# This model predicts the average market value from the training data, a comparison point to see if the other models actually improve.
 baseline_prediction = y_train.mean()
 baseline_preds = np.full(len(y_test), baseline_prediction)
 
@@ -38,6 +45,7 @@ print(f"MAE: {baseline_mae:.2f}")
 print(f"R^2: {baseline_r2:.4f}")
 
 # Linear Regression Model
+# This model is used to test if there is a linear relationship between the features and market value.
 
 # Scaling Features
 scaler = StandardScaler()
@@ -48,10 +56,11 @@ X_test_scaled = scaler.transform(X_test)
 lr = LinearRegression()
 lr.fit(X_train_scaled, y_train)
 
-# Prediction
+# Make predictions on the test data
 lr_preds = lr.predict(X_test_scaled)
 
 # Evaluation
+# RMSE, MAE, and R² are used to compare how close the predictions are to the actual values.
 lr_mse = mean_squared_error(y_test, lr_preds)
 lr_rmse = np.sqrt(lr_mse)
 lr_mae = mean_absolute_error(y_test, lr_preds)
@@ -64,6 +73,7 @@ print(f"MAE: {lr_mae:.2f}")
 print(f"R^2: {lr_r2:.4f}")
 
 # Default Decision Tree
+# This model is used because market value is likely not based on a strictly linear relationship.
 dt_default = DecisionTreeRegressor(random_state=42)
 dt_default.fit(X_train, y_train)
 
@@ -80,6 +90,7 @@ print(f"MAE: {dt_default_mae:.2f}")
 print(f"R^2: {dt_default_r2:.4f}")
 
 # Default Random Forest
+# Random forest is used because it combines multiple decision trees and can reduce overfitting.
 rf_default = RandomForestRegressor(n_estimators=100, random_state=42)
 rf_default.fit(X_train, y_train)
 
@@ -96,6 +107,7 @@ print(f"MAE: {rf_default_mae:.2f}")
 print(f"R^2: {rf_default_r2:.4f}")
 
 # Decision Tree with Hyperparameter Tuning
+# GridSearchCV tests different parameter combinations to find a better decision tree model.
 dt_params = {
     'max_depth': [3, 5, 10, 15, None],
     'min_samples_split': [2, 5, 10],
@@ -165,6 +177,7 @@ print(f"MAE: {rf_mae:.2f}")
 print(f"R^2: {rf_r2:.4f}")
 
 # Random Forest Feature Importance
+# This shows which features had the biggest effect on the random forest prediction.
 importances = best_rf.feature_importances_
 feature_names = X.columns
 
@@ -187,6 +200,8 @@ plt.savefig("feature_importance.png")
 plt.close()
 
 # Graphs
+# These graphs are saved so the model results can be compared visually
+
 models = [
     'Baseline',
     'Linear Regression',
@@ -224,6 +239,7 @@ r2_values = [
 ]
 
 # RMSE Plot
+# Lower RMSE means the model's predictions are closer to the actual market values.
 plt.figure()
 plt.bar(models, rmse_values)
 plt.title("RMSE Comparison")
@@ -235,6 +251,7 @@ plt.savefig("rmse_comparison.png")
 plt.close()
 
 # MAE Plot
+# Lower MAE means the average prediction error is smaller.
 plt.figure()
 plt.bar(models, mae_values)
 plt.title("MAE Comparison")
@@ -246,6 +263,7 @@ plt.savefig("mae_comparison.png")
 plt.close()
 
 # R² Plot
+# Higher R² means the model explains more of the variation in market value.
 plt.figure()
 plt.bar(models, r2_values)
 plt.title("R² Comparison")
@@ -257,6 +275,7 @@ plt.savefig("r2_comparison.png")
 plt.close()
 
 # Linear Regression Scatterplot
+# This compares the actual market values to the predicted values for linear regression.
 plt.figure(figsize=(8, 6))
 plt.scatter(y_test, lr_preds, alpha=0.5)
 plt.plot([y_test.min(), y_test.max()],
@@ -269,6 +288,7 @@ plt.savefig("linear_regression_scatterplot.png")
 plt.close()
 
 # Tuned Decision Tree Scatterplot
+# This shows how close the tuned decision tree predictions are to the actual values.
 plt.figure(figsize=(8, 6))
 plt.scatter(y_test, dt_preds, alpha=0.5)
 plt.plot([y_test.min(), y_test.max()],
@@ -281,6 +301,7 @@ plt.savefig("decision_tree_scatterplot.png")
 plt.close()
 
 # Tuned Random Forest Scatterplot
+# This shows how close the tuned random forest predictions are to the actual values.
 plt.figure(figsize=(8, 6))
 plt.scatter(y_test, rf_preds, alpha=0.5)
 plt.plot([y_test.min(), y_test.max()],
