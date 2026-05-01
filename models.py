@@ -21,7 +21,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
-# Baseline MOdel
+# Baseline Model
 baseline_prediction = y_train.mean()
 baseline_preds = np.full(len(y_test), baseline_prediction)
 
@@ -37,7 +37,7 @@ print(f"RMSE: {baseline_rmse:.2f}")
 print(f"MAE: {baseline_mae:.2f}")
 print(f"R^2: {baseline_r2:.4f}")
 
-# Linear Regression
+# Linear Regression Model
 
 # Scaling Features
 scaler = StandardScaler()
@@ -63,8 +63,39 @@ print(f"RMSE: {lr_rmse:.2f}")
 print(f"MAE: {lr_mae:.2f}")
 print(f"R^2: {lr_r2:.4f}")
 
-# Decision Tree with Hyperparameter Tuning
+# Default Decision Tree
+dt_default = DecisionTreeRegressor(random_state=42)
+dt_default.fit(X_train, y_train)
 
+dt_default_preds = dt_default.predict(X_test)
+
+dt_default_mse = mean_squared_error(y_test, dt_default_preds)
+dt_default_rmse = np.sqrt(dt_default_mse)
+dt_default_mae = mean_absolute_error(y_test, dt_default_preds)
+dt_default_r2 = r2_score(y_test, dt_default_preds)
+
+print("\nDefault Decision Tree Results")
+print(f"RMSE: {dt_default_rmse:.2f}")
+print(f"MAE: {dt_default_mae:.2f}")
+print(f"R^2: {dt_default_r2:.4f}")
+
+# Default Random Forest
+rf_default = RandomForestRegressor(n_estimators=100, random_state=42)
+rf_default.fit(X_train, y_train)
+
+rf_default_preds = rf_default.predict(X_test)
+
+rf_default_mse = mean_squared_error(y_test, rf_default_preds)
+rf_default_rmse = np.sqrt(rf_default_mse)
+rf_default_mae = mean_absolute_error(y_test, rf_default_preds)
+rf_default_r2 = r2_score(y_test, rf_default_preds)
+
+print("\nDefault Random Forest Results")
+print(f"RMSE: {rf_default_rmse:.2f}")
+print(f"MAE: {rf_default_mae:.2f}")
+print(f"R^2: {rf_default_r2:.4f}")
+
+# Decision Tree with Hyperparameter Tuning
 dt_params = {
     'max_depth': [3, 5, 10, 15, None],
     'min_samples_split': [2, 5, 10],
@@ -98,8 +129,7 @@ print(f"RMSE: {dt_rmse:.2f}")
 print(f"MAE: {dt_mae:.2f}")
 print(f"R^2: {dt_r2:.4f}")
 
-# Random Forest with Hyperparameter tuning
-
+# Random Forest with Hyperparameter Tuning
 rf_params = {
     'n_estimators': [100, 200],
     'max_depth': [5, 10, 15, None],
@@ -135,24 +165,17 @@ print(f"MAE: {rf_mae:.2f}")
 print(f"R^2: {rf_r2:.4f}")
 
 # Random Forest Feature Importance
-
 importances = best_rf.feature_importances_
 feature_names = X.columns
 
-# Create DataFrame
 feature_importance_df = pd.DataFrame({
     'Feature': feature_names,
     'Importance': importances
-})
+}).sort_values(by='Importance', ascending=False)
 
-# Sort by importance
-feature_importance_df = feature_importance_df.sort_values(by='Importance', ascending=False)
-
-# Print top 10 features
 print("\nTop 10 Most Important Features (Random Forest)")
 print(feature_importance_df.head(10))
 
-# Plot Top 10 Features
 plt.figure()
 plt.barh(feature_importance_df['Feature'][:10], feature_importance_df['Importance'][:10])
 plt.xlabel("Importance")
@@ -162,13 +185,43 @@ plt.gca().invert_yaxis()
 plt.tight_layout()
 plt.savefig("feature_importance.png")
 plt.close()
+
 # Graphs
+models = [
+    'Baseline',
+    'Linear Regression',
+    'DT (Default)',
+    'DT (Tuned)',
+    'RF (Default)',
+    'RF (Tuned)'
+]
 
-models = ['Baseline', 'Linear Regression', 'Tuned Decision Tree', 'Tuned Random Forest']
+rmse_values = [
+    baseline_rmse,
+    lr_rmse,
+    dt_default_rmse,
+    dt_rmse,
+    rf_default_rmse,
+    rf_rmse
+]
 
-rmse_values = [baseline_rmse, lr_rmse, dt_rmse, rf_rmse]
-mae_values = [baseline_mae, lr_mae, dt_mae, rf_mae]
-r2_values = [baseline_r2, lr_r2, dt_r2, rf_r2]
+mae_values = [
+    baseline_mae,
+    lr_mae,
+    dt_default_mae,
+    dt_mae,
+    rf_default_mae,
+    rf_mae
+]
+
+r2_values = [
+    baseline_r2,
+    lr_r2,
+    dt_default_r2,
+    dt_r2,
+    rf_default_r2,
+    rf_r2
+]
 
 # RMSE Plot
 plt.figure()
@@ -206,11 +259,8 @@ plt.close()
 # Linear Regression Scatterplot
 plt.figure(figsize=(8, 6))
 plt.scatter(y_test, lr_preds, alpha=0.5)
-plt.plot(
-    [y_test.min(), y_test.max()],
-    [y_test.min(), y_test.max()],
-    'r--'
-)
+plt.plot([y_test.min(), y_test.max()],
+         [y_test.min(), y_test.max()], 'r--')
 plt.title("Linear Regression: Actual vs Predicted Market Value")
 plt.xlabel("Actual Market Value")
 plt.ylabel("Predicted Market Value")
@@ -221,11 +271,8 @@ plt.close()
 # Tuned Decision Tree Scatterplot
 plt.figure(figsize=(8, 6))
 plt.scatter(y_test, dt_preds, alpha=0.5)
-plt.plot(
-    [y_test.min(), y_test.max()],
-    [y_test.min(), y_test.max()],
-    'r--'
-)
+plt.plot([y_test.min(), y_test.max()],
+         [y_test.min(), y_test.max()], 'r--')
 plt.title("Tuned Decision Tree: Actual vs Predicted Market Value")
 plt.xlabel("Actual Market Value")
 plt.ylabel("Predicted Market Value")
@@ -236,11 +283,8 @@ plt.close()
 # Tuned Random Forest Scatterplot
 plt.figure(figsize=(8, 6))
 plt.scatter(y_test, rf_preds, alpha=0.5)
-plt.plot(
-    [y_test.min(), y_test.max()],
-    [y_test.min(), y_test.max()],
-    'r--'
-)
+plt.plot([y_test.min(), y_test.max()],
+         [y_test.min(), y_test.max()], 'r--')
 plt.title("Tuned Random Forest: Actual vs Predicted Market Value")
 plt.xlabel("Actual Market Value")
 plt.ylabel("Predicted Market Value")
